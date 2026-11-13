@@ -65,7 +65,7 @@ cp .env.example .env
 `.env`ファイルを編集：
 
 ```env
-PORT=5000
+PORT=5001
 NODE_ENV=development
 
 # DeepL APIキー（https://www.deepl.com/pro-api で取得）
@@ -122,8 +122,8 @@ npm start
 ### 7. アプリケーションにアクセス
 
 - **フロントエンド**: http://localhost:5173
-- **バックエンドAPI**: http://localhost:5000
-- **APIヘルスチェック**: http://localhost:5000/api/health
+- **バックエンドAPI**: http://localhost:5001
+- **APIヘルスチェック**: http://localhost:5001/api/health
 
 ## Biztranslateの使い方
 
@@ -253,8 +253,8 @@ npm run format           # Prettier実行
 ### ポートが使用中
 
 ```bash
-# ポート5000が使用中の場合
-lsof -ti:5000 | xargs kill -9
+# ポート5001が使用中の場合
+lsof -ti:5001 | xargs kill -9
 
 # ポート5173が使用中の場合
 lsof -ti:5173 | xargs kill -9

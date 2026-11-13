@@ -64,7 +64,7 @@ flowchart TB
             Format[フォーマットサービス<br/>出力整形]
         end
         
-        DB[(MongoDB<br/>データ永続化)]
+        DB[(SQLite<br/>データ永続化)]
     end
 
     subgraph External["🌐 外部API"]
@@ -115,7 +115,7 @@ flowchart TB
 4. **翻訳処理** → 翻訳サービスがDeepL APIを呼び出し
 5. **返信提案** → 返信提案サービスがメッセージを分析し、DeepL APIで翻訳
 6. **フォーマット** → プラットフォーム形式（Slack/Email）に変換
-7. **データ保存** → MongoDBに会話履歴を保存
+7. **データ保存** → SQLiteに会話履歴を保存
 8. **レスポンス** → フロントエンドに結果を返却
 9. **UI更新** → Zustandの状態更新でReactコンポーネントが再レンダリング
 
@@ -132,7 +132,7 @@ flowchart TB
 **バックエンド**
 - Node.js + Express
 - TypeScript
-- MongoDB + Mongoose
+- SQLite + better-sqlite3
 - DeepL API（翻訳エンジン）
 
 ### 主な特徴
@@ -435,7 +435,6 @@ Bobを活用することで、以下の期間で開発できました：
 
 **必要な環境：**
 - Node.js 18以上
-- MongoDB 6.0以上
 - DeepL API キー（無料プラン可）
 
 **基本的な起動コマンド：**
@@ -498,7 +497,7 @@ BobというAI開発アシスタントを活用することで、以下のメリ
 - [React](https://react.dev/) - UIフレームワーク
 - [Zustand](https://github.com/pmndrs/zustand) - 状態管理ライブラリ
 - [TailwindCSS](https://tailwindcss.com/) - CSSフレームワーク
-- [MongoDB](https://www.mongodb.com/) - NoSQLデータベース
+- [SQLite](https://www.sqlite.org/) - 組み込みデータベース
 - [Express](https://expressjs.com/) - Node.jsフレームワーク
 
 ---

@@ -11,7 +11,7 @@ import routes from './routes';
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // ミドルウェア設定
 app.use(helmet()); // セキュリティヘッダー
