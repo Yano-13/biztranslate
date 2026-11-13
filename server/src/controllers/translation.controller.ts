@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
-import Thread from '../models/Thread';
-import Message from '../models/Message';
+import { findThreadById, touchThread } from '../models/Thread';
+import {
+  insertMessage,
+  findMessageById,
+  updateMessageSuggestions,
+  findMessagesByThread,
+  countMessagesByThread,
+} from '../models/Message';
 import deeplService from '../services/deepl.service';
 import formatterService from '../services/formatter.service';
 import suggestionService from '../services/suggestion.service';
@@ -26,7 +32,7 @@ export const translateText = async (req: Request, res: Response): Promise<void> 
     // スレッドIDが指定されている場合はメッセージとして保存
     let savedMessage = null;
     if (threadId) {
-      const message = new Message({
+      savedMessage = insertMessage({
         threadId,
         direction: 'incoming',
         originalText: text,
@@ -39,12 +45,8 @@ export const translateText = async (req: Request, res: Response): Promise<void> 
         },
       });
 
-      savedMessage = await message.save();
-
       // スレッドの最終メッセージ日時を更新
-      await Thread.findByIdAndUpdate(threadId, {
-        lastMessageAt: new Date(),
-      });
+      touchThread(threadId);
     }
 
     res.json({
@@ -99,7 +101,7 @@ export const translateReply = async (req: Request, res: Response): Promise<void>
     }
 
     // メッセージとして保存
-    const message = new Message({
+    const message = insertMessage({
       threadId,
       direction: 'outgoing',
       originalText: text,
@@ -113,12 +115,8 @@ export const translateReply = async (req: Request, res: Response): Promise<void>
       },
     });
 
-    await message.save();
-
     // スレッドの最終メッセージ日時を更新
-    await Thread.findByIdAndUpdate(threadId, {
-      lastMessageAt: new Date(),
-    });
+    touchThread(threadId);
 
     res.json({
       success: true,
@@ -159,7 +157,7 @@ export const generateSuggestions = async (
     }
 
     // メッセージを取得
-    const message = await Message.findById(messageId);
+    const message = findMessageById(messageId);
     if (!message) {
       res.status(404).json({
         success: false,
@@ -176,8 +174,7 @@ export const generateSuggestions = async (
     );
 
     // メッセージに提案を保存
-    message.suggestions = suggestions;
-    await message.save();
+    updateMessageSuggestions(messageId, suggestions);
 
     res.json({
       success: true,
@@ -205,12 +202,9 @@ export const getThreadMessages = async (
     const { threadId } = req.params;
     const { limit = 50, skip = 0 } = req.query;
 
-    const messages = await Message.find({ threadId })
-      .sort({ createdAt: 1 })
-      .limit(Number(limit))
-      .skip(Number(skip));
+    const messages = findMessagesByThread(threadId, Number(limit), Number(skip));
 
-    const total = await Message.countDocuments({ threadId });
+    const total = countMessagesByThread(threadId);
 
     res.json({
       success: true,
@@ -254,7 +248,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     }
 
     // スレッドの存在確認
-    const thread = await Thread.findById(threadId);
+    const thread = findThreadById(threadId);
     if (!thread) {
       res.status(404).json({
         success: false,
@@ -287,7 +281,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     }
 
     // メッセージを保存
-    const message = new Message({
+    const message = insertMessage({
       threadId,
       direction,
       originalText: text,
@@ -302,11 +296,8 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
       },
     });
 
-    await message.save();
-
     // スレッドの最終メッセージ日時を更新
-    thread.lastMessageAt = new Date();
-    await thread.save();
+    touchThread(threadId);
 
     res.status(201).json({
       success: true,

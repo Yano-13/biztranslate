@@ -24,14 +24,15 @@
 ### バックエンド
 - Node.js + Express
 - TypeScript
-- MongoDB + Mongoose
+- SQLite + better-sqlite3（MongoDBから移行 *2026-11-13）
 - DeepL API
 
 ## 必要な環境
 
 - Node.js 18以上
-- MongoDB 6.0以上（ローカルまたはMongoDB Atlas）
 - DeepL API キー（無料プラン可）
+
+※ データベースはSQLiteを使用するため、別途DBサーバーのインストールは不要です。
 
 ## 🚀 セットアップ手順
 
@@ -67,38 +68,20 @@ cp .env.example .env
 PORT=5000
 NODE_ENV=development
 
-# MongoDB接続URL
-MONGODB_URI=mongodb://localhost:27017/biztranslate
-# または MongoDB Atlas:
-# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/biztranslate
-
 # DeepL APIキー（https://www.deepl.com/pro-api で取得）
 DEEPL_API_KEY=your_deepl_api_key_here
 
 CORS_ORIGIN=http://localhost:5173
 ```
 
-### 4. MongoDBのセットアップ
+### 4. データベース
 
-#### ローカルMongoDB
+SQLiteを使用します。初回起動時に `server/data/biztranslate.db` が自動作成されるため、追加の設定は不要です。
 
-```bash
-# macOS (Homebrew)
-brew install mongodb-community
-brew services start mongodb-community
-
-# Ubuntu/Debian
-sudo apt-get install mongodb
-sudo systemctl start mongodb
-```
-
-#### MongoDB Atlas（クラウド）
-
-1. [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)でアカウント作成
-2. 無料クラスターを作成
-3. データベースユーザーを作成
-4. IPアドレスをホワイトリストに追加
-5. 接続文字列を`.env`の`MONGODB_URI`に設定
+> **移行について**
+> 従来は MongoDB + Mongoose を使用していましたが、初心者でも無料かつ簡単に始められるよう SQLite（better-sqlite3）へ移行しました。
+> 既存の MongoDB データは引き継がれないため、移行後は新しいデータベースとして起動します。
+> 旧バージョンのデータが必要な場合は、移行前のブランチを参照してください。
 
 ### 5. DeepL APIキーの取得
 
@@ -255,16 +238,11 @@ npm run format           # Prettier実行
 
 ## トラブルシューティング
 
-### MongoDBに接続できない
+### データベースエラー
 
-```bash
-# MongoDBが起動しているか確認
-# macOS
-brew services list
-
-# Linux
-sudo systemctl status mongodb
-```
+- `server/data/` ディレクトリに書き込み権限があるか確認
+- 別のプロセスが同じDBファイルを開いていないか確認
+- DBを初期化したい場合は `server/data/` を削除して再起動
 
 ### DeepL APIエラー
 
@@ -302,5 +280,5 @@ Mio Yano (M.yano@ibm.com)
 ## 関連リンク
 
 - [DeepL](https://www.deepl.com/) - 高品質な翻訳API
-- [MongoDB](https://www.mongodb.com/) - データベース
+- [SQLite](https://www.sqlite.org/) - データベース
 - [React](https://react.dev/) - UIフレームワーク

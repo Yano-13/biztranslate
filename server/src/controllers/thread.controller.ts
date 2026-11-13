@@ -1,6 +1,13 @@
 import { Request, Response } from 'express';
-import Thread from '../models/Thread';
-import Message from '../models/Message';
+import {
+  findThreads,
+  countThreads,
+  findThreadById,
+  insertThread,
+  updateThreadFields,
+  deleteThreadById,
+} from '../models/Thread';
+import { deleteMessagesByThread } from '../models/Message';
 
 /**
  * スレッド一覧を取得
@@ -9,20 +16,16 @@ export const getThreads = async (req: Request, res: Response): Promise<void> => 
   try {
     const { archived, platform, limit = 50, skip = 0 } = req.query;
 
-    const filter: any = {};
+    const filter: { isArchived?: boolean; platform?: string } = {};
     if (archived !== undefined) {
       filter.isArchived = archived === 'true';
     }
     if (platform) {
-      filter.platform = platform;
+      filter.platform = platform as string;
     }
 
-    const threads = await Thread.find(filter)
-      .sort({ lastMessageAt: -1 })
-      .limit(Number(limit))
-      .skip(Number(skip));
-
-    const total = await Thread.countDocuments(filter);
+    const threads = findThreads(filter, Number(limit), Number(skip));
+    const total = countThreads(filter);
 
     res.json({
       success: true,
@@ -49,7 +52,7 @@ export const getThreadById = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
 
-    const thread = await Thread.findById(id);
+    const thread = findThreadById(id);
     if (!thread) {
       res.status(404).json({
         success: false,
@@ -95,14 +98,12 @@ export const createThread = async (req: Request, res: Response): Promise<void> =
       minute: '2-digit',
     });
 
-    const thread = new Thread({
+    const thread = insertThread({
       title: defaultTitle,
       platform,
       participants: participants || [],
       tags: tags || [],
     });
-
-    await thread.save();
 
     res.status(201).json({
       success: true,
@@ -125,24 +126,20 @@ export const updateThread = async (req: Request, res: Response): Promise<void> =
     const { id } = req.params;
     const { title, participants, tags, isArchived } = req.body;
 
-    const thread = await Thread.findByIdAndUpdate(
-      id,
-      {
-        ...(title && { title }),
-        ...(participants && { participants }),
-        ...(tags && { tags }),
-        ...(isArchived !== undefined && { isArchived }),
-      },
-      { new: true, runValidators: true }
-    );
-
-    if (!thread) {
+    if (!findThreadById(id)) {
       res.status(404).json({
         success: false,
         error: 'Thread not found',
       });
       return;
     }
+
+    const thread = updateThreadFields(id, {
+      ...(title && { title }),
+      ...(participants && { participants }),
+      ...(tags && { tags }),
+      ...(isArchived !== undefined && { isArchived }),
+    });
 
     res.json({
       success: true,
@@ -164,8 +161,7 @@ export const deleteThread = async (req: Request, res: Response): Promise<void> =
   try {
     const { id } = req.params;
 
-    const thread = await Thread.findByIdAndDelete(id);
-    if (!thread) {
+    if (!deleteThreadById(id)) {
       res.status(404).json({
         success: false,
         error: 'Thread not found',
@@ -174,7 +170,7 @@ export const deleteThread = async (req: Request, res: Response): Promise<void> =
     }
 
     // 関連するメッセージも削除
-    await Message.deleteMany({ threadId: id });
+    deleteMessagesByThread(id);
 
     res.json({
       success: true,
@@ -199,8 +195,8 @@ export const toggleArchiveThread = async (
   try {
     const { id } = req.params;
 
-    const thread = await Thread.findById(id);
-    if (!thread) {
+    const current = findThreadById(id);
+    if (!current) {
       res.status(404).json({
         success: false,
         error: 'Thread not found',
@@ -208,8 +204,7 @@ export const toggleArchiveThread = async (
       return;
     }
 
-    thread.isArchived = !thread.isArchived;
-    await thread.save();
+    const thread = updateThreadFields(id, { isArchived: !current.isArchived });
 
     res.json({
       success: true,

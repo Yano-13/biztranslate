@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { connectDatabase } from './config/database';
+import { connectDatabase, disconnectDatabase } from './config/database';
 import routes from './routes';
 
 // 環境変数の読み込み
@@ -97,16 +97,9 @@ const gracefulShutdown = async (signal: string) => {
   if (server) {
     server.close(async () => {
       console.log('✅ HTTP server closed');
-      
-      // MongoDBの接続を閉じる
-      try {
-        const mongoose = await import('mongoose');
-        await mongoose.default.connection.close();
-        console.log('✅ MongoDB connection closed');
-      } catch (error) {
-        console.error('Error closing MongoDB connection:', error);
-      }
-      
+
+      await disconnectDatabase();
+
       process.exit(0);
     });
 
